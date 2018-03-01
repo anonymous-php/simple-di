@@ -1,0 +1,26 @@
+{
+    "name": "anonymous-php/simple-pdo",
+    "type": "library",
+    "description": "Simple Dependency Injection Container and Resolver",
+    "keywords": [
+        "dependency injection",
+        "di",
+        "container",
+        "invoker"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anonymous PHP Developer",
+            "email": "anonym.php@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Anonymous\\SimpleDi\\": "src/"
+        }
+    },
+    "require": {
+        "psr/container": "^1.0"
+    }
+}
