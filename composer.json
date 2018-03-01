@@ -1,10 +1,12 @@
 {
-    "name": "anonymous-php/simple-pdo",
+    "name": "anonymous-php/simple-di",
     "type": "library",
-    "description": "Simple Dependency Injection Container and Resolver",
+    "description": "Simple Dependency Resolving and Injection Container",
     "keywords": [
         "dependency injection",
         "di",
+        "dependency resolving",
+        "resolver",
         "container",
         "invoker"
     ],

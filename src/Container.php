@@ -20,7 +20,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      * Container constructor
      * @param array $definitions
      */
-    public function __construct($definitions = [])
+    public function __construct(array $definitions = [])
     {
         $this->definitions = $definitions;
     }
@@ -221,7 +221,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      * @throws FactoryException
      * @throws NotFoundException
      */
-    protected function getInjections($definition, $method, $arguments = [])
+    protected function getInjections($definition, $method, array $arguments = [])
     {
         $injections = [];
         $parameters = $this->getReflectionParameters($definition, $method);
@@ -242,13 +242,13 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
                 // Argument matched by name
                 $injection = $arguments[$parameter->name];
             } elseif ($parameter->isDefaultValueAvailable()) {
-                // Default value, - yes we are lazy
+                // Default value, - yes it's lazy
                 $injection = $parameter->getDefaultValue();
             } elseif ($parameter->getClass()) {
                 // Is there an addition of specified type
                 $argument = $this->getTypedArgument($arguments, $parameter->getClass()->name);
                 // Try to resolve dependency
-                $injection = $argument ?? $this->make($parameter->getClass()->name);
+                $injection = $argument !== null ? $argument : $this->make($parameter->getClass()->name);
             } else {
                 throw new FactoryException("Unresolvable dependency '{$parameter->name}'");
             }
@@ -310,7 +310,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
             ? $reflectionMethod->getParameters()
             : [];
 
-        // In case of definition it will be in resolved cache next time,
+        // In case of definition it will be added to the cache of resolved,
         // in other cases we don't know how to cache it
         if (!$callable instanceof \Closure) {
             $this->reflection[$className][$method] = $reflectionParameters;
