@@ -3,6 +3,11 @@
 namespace Anonymous\SimpleDi;
 
 
+/**
+ * Dependency Resolving and Injection Container
+ * @package Anonymous\SimpleDi
+ * @author Anonymous PHP Developer <anonym.php@gmail.com>
+ */
 class Container implements ContainerInterface, FactoryInterface, InvokerInterface, \ArrayAccess
 {
 
