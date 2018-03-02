@@ -13,6 +13,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
     protected $definitions = [];
     protected $resolved = [];
+    protected $services = [];
     protected $reflection = [];
 
 
@@ -36,14 +37,29 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
         // Resolve string and closure definitions
         if (!array_key_exists($id, $this->resolved)) {
-            $definition = $this->definitions[$id];
+            $definition = $this->getRaw($id);
 
             $this->resolved[$id] = $definition instanceof \Closure
-                ? $this->injectOn($definition)
+                ? $this->injectOn(clone $definition)
                 : $definition;
         }
 
         return $this->resolved[$id];
+    }
+
+    /**
+     * Gets raw definition
+     * @param $id
+     * @return mixed
+     * @throws NotFoundException
+     */
+    public function getRaw($id)
+    {
+        if (!$this->has($id)) {
+            throw new NotFoundException("There is no definition for '{$id}'");
+        }
+
+        return $this->definitions[$id];
     }
 
     /**
@@ -62,7 +78,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function set($id, $value)
     {
         $this->definitions[$id] = $value;
-        unset($this->resolved[$id], $this->reflection[$id]);
+        unset($this->resolved[$id], $this->reflection[$id], $this->services[$id]);
     }
 
     /**
@@ -77,10 +93,10 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function instantiate($id, array $arguments = [], $instanceOf = null)
     {
-        $definition = $this->has($id) ? $this->definitions[$id] : $id;
+        $definition = $this->has($id) ? $this->getRaw($id) : $id;
 
         if ($definition instanceof \Closure) {
-            $definition = $this->injectOn($definition);
+            $definition = $this->injectOn(clone $definition);
         }
 
         if (is_string($definition) && class_exists($definition)) {
@@ -91,7 +107,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
         // Check for instance of specified type
         if (is_object($definition) && ($instanceOf === null || $definition instanceof $instanceOf)) {
-            return $this->resolved[$id] = $definition;
+            return $this->services[$id] = $definition;
         }
 
         throw new FactoryException("Unresolvable dependency '{$id}' or type mismatch");
@@ -110,8 +126,8 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function make($id, array $arguments = [], $recreate = false)
     {
         // Check cache of already resolved
-        if (!$recreate && array_key_exists($id, $this->resolved)) {
-            return $this->resolved[$id];
+        if (!$recreate && array_key_exists($id, $this->services)) {
+            return $this->services[$id];
         }
 
         return $this->instantiate($id, $arguments);
@@ -213,7 +229,12 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function offsetUnset($offset)
     {
-        unset($this->definitions[$offset], $this->resolved[$offset], $this->reflection[$offset]);
+        unset(
+            $this->definitions[$offset],
+            $this->resolved[$offset],
+            $this->reflection[$offset],
+            $this->services[$offset]
+        );
     }
 
     /**
