@@ -77,7 +77,11 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function instantiate($id, array $arguments = [], $instanceOf = null)
     {
-        $definition = $this->has($id) ? $this->get($id) : $id;
+        $definition = $this->has($id) ? $this->definitions[$id] : $id;
+
+        if ($definition instanceof \Closure) {
+            $definition = $this->injectOn($definition);
+        }
 
         if (is_string($definition) && class_exists($definition)) {
             // Create an instance of the existing class
@@ -160,8 +164,9 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function injectOn($callable, array $arguments = [])
     {
         if (is_array($callable) && count($callable) >= 2) {
-            $callable = array_shift($callable);
-            $method = array_shift($callable);
+            $array = $callable;
+            $callable = array_shift($array);
+            $method = array_shift($array);
         }
 
         if ($callable instanceof \Closure) {
