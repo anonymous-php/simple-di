@@ -35,16 +35,21 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
             throw new NotFoundException("There is no definition for '{$id}'");
         }
 
-        // Resolve string and closure definitions
-        if (!array_key_exists($id, $this->resolved)) {
-            $definition = $this->getRaw($id);
-
-            $this->resolved[$id] = $definition instanceof \Closure
-                ? $this->injectOn(clone $definition)
-                : $definition;
+        if (array_key_exists($id, $this->resolved)) {
+            return $this->resolved[$id];
         }
 
-        return $this->resolved[$id];
+        $definition = $this->getRaw($id);
+
+        // Resolve Closure and put the result to the cache
+        if ($definition instanceof \Closure) {
+            $this->resolved[$id] = $definition = call_user_func_array(
+                $definition,
+                $this->getInjections($definition, '__invoke', [], $id)
+            );
+        }
+
+        return $definition;
     }
 
     /**
@@ -96,7 +101,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
         $definition = $this->has($id) ? $this->getRaw($id) : $id;
 
         if ($definition instanceof \Closure) {
-            $definition = $this->injectOn(clone $definition);
+            $definition = $this->injectOn($definition);
         }
 
         if (is_string($definition) && class_exists($definition)) {
@@ -242,15 +247,16 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      * @param string|object $definition
      * @param string $method
      * @param array $arguments
+     * @param string $closureCacheKey
      * @return array
      * @throws InvokerException
      * @throws FactoryException
      * @throws NotFoundException
      */
-    protected function getInjections($definition, $method, array $arguments = [])
+    protected function getInjections($definition, $method, array $arguments = [], $closureCacheKey = null)
     {
         $injections = [];
-        $parameters = $this->getReflectionParameters($definition, $method);
+        $parameters = $this->getReflectionParameters($definition, $method, $closureCacheKey);
 
         if (!$parameters) {
             return $injections;
@@ -303,33 +309,35 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
     /**
      * Gets and caches reflection parameters for the specified method
-     * @param $callable
-     * @param $method
+     * @param string|object $callable
+     * @param string $method
+     * @param string $closureCacheKey
      * @return \ReflectionParameter[]
      * @throws InvokerException
      */
-    protected function getReflectionParameters($callable, $method)
+    protected function getReflectionParameters($callable, $method, $closureCacheKey = null)
     {
         $className = is_object($callable) ? get_class($callable) : $callable;
 
-        // Check cache for resolved reflection
+        // Check cache for the resolved reflection
         if (isset($this->reflection[$className][$method])) {
             return $this->reflection[$className][$method];
         }
 
         // ReflectionObject in case of closure and ReflectionClass in case of constructor,
         // doesn't matter for other cases
-        $reflectionObject = is_object($callable)
-            ? new \ReflectionObject($callable)
-            : new \ReflectionClass($className);
-
-        // getMethod throws an exception in case of method absence
         try {
+            // ReflectionClass throws an exception in case of class absence
+            $reflectionObject = is_object($callable)
+                ? new \ReflectionObject($callable)
+                : new \ReflectionClass($className);
+
+            // getMethod throws an exception in case of method absence
             $reflectionMethod = $method == '__construct'
                 ? $reflectionObject->getConstructor()
                 : $reflectionObject->getMethod($method);
         } catch (\ReflectionException $e) {
-            throw new InvokerException("There is no callable method '{$method}' in '{$className}'");
+            throw new InvokerException("There is no class '{$className}' or callable method '{$method}'", 0, $e);
         }
 
         $reflectionParameters = $reflectionMethod
@@ -338,8 +346,8 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
         // In case of definition it will be added to the cache of resolved,
         // in other cases we don't know how to cache it
-        if (!$callable instanceof \Closure) {
-            $this->reflection[$className][$method] = $reflectionParameters;
+        if (!$callable instanceof \Closure || $closureCacheKey) {
+            $this->reflection[$closureCacheKey ?: $className][$method] = $reflectionParameters;
         }
 
         return $reflectionParameters;
