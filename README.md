@@ -57,8 +57,8 @@ var_dump($container->get('primitive'), $container->get('wrapped-primitive'));
 ### instantiate($id, array $arguments = [], $instanceOf = null)
 
 This method creates an instance of the certain class. It tries to resolve the definition or instantiate provided class 
-in case of definition absence. The method creates the new one instance on each call. In case of closures it resolves 
-them each time too. 
+in case of definition absence. The method creates the new one instance on each call. In case of closure as argument 
+`instantiate` resolves it each time too. 
 
 ```php
 <?php

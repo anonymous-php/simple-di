@@ -72,7 +72,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function has($id)
     {
-        return array_key_exists($id, $this->definitions);
+        return is_string($id) && array_key_exists($id, $this->definitions);
     }
 
     /**
@@ -98,11 +98,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function instantiate($id, array $arguments = [], $instanceOf = null)
     {
-        $definition = $this->has($id) ? $this->getRaw($id) : $id;
-
-        if ($definition instanceof \Closure) {
-            $definition = $this->injectOn($definition);
-        }
+        $definition = $this->has($id) ? $this->get($id) : $id;
 
         if (is_string($definition) && class_exists($definition)) {
             // Create an instance of the existing class
