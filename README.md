@@ -23,7 +23,7 @@ dependency for the Container and get the value you need. Keep this type of value
 ## Installation
 
 ```
-composer install anonymous-php/simple-di
+composer require anonymous-php/simple-di
 ```
 
 ## Methods
