@@ -35,12 +35,14 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function get($id)
     {
         if ($this->compatibilityMode) {
-            if ($this->has($id)) {
-                $id = $this->getRaw($id);
+            $definition = $id;
+
+            if ($this->has($definition)) {
+                $definition = $this->getRaw($definition);
             }
 
-            if (is_string($id) && class_exists($id)) {
-                return $this->make($id);
+            if (is_string($definition) && class_exists($definition)) {
+                return $this->make($definition);
             }
         }
 
