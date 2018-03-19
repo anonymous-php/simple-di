@@ -34,6 +34,16 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function get($id)
     {
+        if ($this->compatibilityMode) {
+            if ($this->has($id)) {
+                $id = $this->getRaw($id);
+            }
+
+            if (is_string($id) && class_exists($id)) {
+                return $this->make($id);
+            }
+        }
+
         if (!$this->has($id)) {
             throw new NotFoundException("There is no definition for '{$id}'");
         }
@@ -50,10 +60,6 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
                 $definition,
                 $this->getInjections($definition, '__invoke', [], $id)
             );
-        }
-
-        if ($this->compatibilityMode && is_string($definition) && class_exists($definition)) {
-            return $this->resolved[$id] = $this->make($definition);
         }
 
         return $definition;
