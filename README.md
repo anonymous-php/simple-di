@@ -20,6 +20,10 @@ I already know what is it while write a code and I want to decide how to use thi
 My colleague asked me about the primitives injection in my library. I don't think is a good idea. Just make the 
 dependency for the Container and get the value you need. Keep this type of values under control by yourself.  
 
+### Compatibility
+
+See `get` method description.
+
 ## Installation
 
 ```
