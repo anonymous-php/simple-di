@@ -16,14 +16,17 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     protected $services = [];
     protected $reflection = [];
 
+    protected $compatibilityMode;
+
 
     /**
      * Container constructor
      * @param array $definitions
      */
-    public function __construct(array $definitions = [])
+    public function __construct(array $definitions = [], $compatibilityMode = false)
     {
         $this->definitions = $definitions;
+        $this->compatibilityMode = $compatibilityMode;
     }
 
     /**
@@ -47,6 +50,10 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
                 $definition,
                 $this->getInjections($definition, '__invoke', [], $id)
             );
+        }
+
+        if ($this->compatibilityMode && is_string($definition) && class_exists($definition)) {
+            return $this->resolved[$id] = $this->make($definition);
         }
 
         return $definition;
