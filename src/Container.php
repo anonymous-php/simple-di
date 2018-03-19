@@ -22,6 +22,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     /**
      * Container constructor
      * @param array $definitions
+     * @param bool $compatibilityMode
      */
     public function __construct(array $definitions = [], $compatibilityMode = false)
     {
@@ -34,6 +35,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function get($id)
     {
+        // PHP-DI compatibility mode
         if ($this->compatibilityMode) {
             $definition = $id;
 
@@ -41,6 +43,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
                 $definition = $this->getRaw($definition);
             }
 
+            // Instantiate class
             if (is_string($definition) && class_exists($definition)) {
                 return $this->make($definition);
             }

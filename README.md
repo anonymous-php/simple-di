@@ -54,6 +54,17 @@ var_dump($container->get('primitive'), $container->get('wrapped-primitive'));
 // string(2) "42"
 ```
 
+If you hope to use Simple Di instead of PHP-DI you can try to instantiate Container in compatibility mode and it will 
+work the same in most cases.
+
+```php
+<?php
+
+$container = new \Anonymous\SimpleDi\Container([
+    // definitions
+], true);
+```
+
 ### instantiate($id, array $arguments = [], $instanceOf = null)
 
 This method creates an instance of the certain class. It tries to resolve the definition or instantiate provided class 
