@@ -116,7 +116,14 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function instantiate($id, array $arguments = [], $instanceOf = null)
     {
-        $definition = $this->has($id) ? $this->get($id) : $id;
+        $definition = $this->has($id) ? $this->getRaw($id) : $id;
+
+        if ($definition instanceof \Closure) {
+            return $this->services[$id] = $definition = call_user_func_array(
+                $definition,
+                $this->getInjections($definition, '__invoke', [], $id)
+            );
+        }
 
         if (is_string($definition) && class_exists($definition)) {
             // Create an instance of the existing class
