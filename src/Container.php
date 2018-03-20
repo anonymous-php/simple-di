@@ -184,6 +184,10 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
             return $this->injectOn($callable, $arguments);
         }
 
+        if (is_string($callable) && method_exists($callable, '__invoke')) {
+            return $this->call([$callable, '__invoke'], $arguments);
+        }
+
         throw new FactoryException("Unresolvable dependency");
     }
 
