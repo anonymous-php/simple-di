@@ -1,16 +1,14 @@
 # Simple DI
 
-This library provides the possibility to create instances of classes with auto-wiring of their arguments and to inject 
-dependencies to called methods. Actually it's more about injection than definitions and the library works great (I hope)
-with no definitions as well. Main class has the name Container by the coincidence and you will understand why if you 
-will continue to read this documentation.   
+Actually this library is more about the dependency container than auto-wiring but don't worry auto-wiring is there. You 
+have the possibility to create instances of classes with auto-wiring of their arguments and to inject dependencies to 
+called methods.
 
 ### History
 
 I like PHP-DI very much but when I started new project I understood it needs another approach of determining it's 
 definitions and dependencies. I wanted to have the simplest as possible syntax of definitions and powerful, but not 
-complex at the same time, mechanism of injection. If I had decided to extend PHP-DI it could been an adventure full of 
-new experience and a lot of code with problems of maintenance in a result. So I just wrote my own DI.
+complex at the same time, mechanism of injection. So I just wrote my own DI.
 
 ### Peculiarities
 
@@ -22,7 +20,7 @@ dependency for the Container and get the value you need. Keep this type of value
 
 ### Compatibility
 
-See `get` method description.
+Auto-wiring is DISABLED by default.
 
 ## Installation
 
@@ -56,17 +54,6 @@ var_dump($container->get('primitive'), $container->get('wrapped-primitive'));
 
 // int(42)
 // string(2) "42"
-```
-
-If you hope to use Simple Di instead of PHP-DI you can try to instantiate Container in compatibility mode and it will 
-work the same in most cases.
-
-```php
-<?php
-
-$container = new \Anonymous\SimpleDi\Container([
-    // definitions
-], true);
 ```
 
 ### instantiate($id, array $arguments = [], $instanceOf = null)
@@ -140,9 +127,9 @@ object(A)#2 (0) {
 
 ### injectOn($callable, array $arguments = [])
 
-Injects arguments to the method of provided **instance** and calls it. If array of arguments doesn't contain all variables 
-which called method wait for the library tries to resolve them. Notice: Closure is an object with the method `__invoke` 
-so you can use `injectOn` on it.
+Injects arguments to the method of provided **instance** and calls it. If array of arguments doesn't contain all 
+variables which called method wait for the library tries to resolve them. Notice: Closure is an object with the method 
+`__invoke` so you can use `injectOn` on it.
 
 ```php
 <?php

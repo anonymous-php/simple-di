@@ -13,10 +13,10 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
     protected $definitions = [];
     protected $resolved = [];
-    protected $services = [];
     protected $reflection = [];
 
-    protected $compatibilityMode;
+    protected $useAutowiring = true;
+    protected $resolveClosures = true;
 
 
     /**
@@ -24,10 +24,10 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      * @param array $definitions
      * @param bool $compatibilityMode
      */
-    public function __construct(array $definitions = [], $compatibilityMode = false)
+    public function __construct(array $definitions = [], $useAutowiring = false, $resolveClosures = true)
     {
         $this->definitions = $definitions;
-        $this->compatibilityMode = $compatibilityMode;
+        $this->useAutowiring = $useAutowiring;
     }
 
     /**
@@ -35,39 +35,11 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
      */
     public function get($id)
     {
-        // PHP-DI compatibility mode
-        if ($this->compatibilityMode) {
-            $definition = $id;
-
-            if ($this->has($definition)) {
-                $definition = $this->getRaw($definition);
-            }
-
-            // Instantiate class
-            if (is_string($definition) && class_exists($definition)) {
-                return $this->make($definition);
-            }
-        }
-
-        if (!$this->has($id)) {
-            throw new NotFoundException("There is no definition for '{$id}'");
-        }
-
         if (array_key_exists($id, $this->resolved)) {
             return $this->resolved[$id];
         }
 
-        $definition = $this->getRaw($id);
-
-        // Resolve Closure and put the result to the cache
-        if ($definition instanceof \Closure) {
-            $this->resolved[$id] = $definition = call_user_func_array(
-                $definition,
-                $this->getInjections($definition, '__invoke', [], $id)
-            );
-        }
-
-        return $definition;
+        return $this->resolve($id);
     }
 
     /**
@@ -101,7 +73,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function set($id, $value)
     {
         $this->definitions[$id] = $value;
-        unset($this->resolved[$id], $this->reflection[$id], $this->services[$id]);
+        unset($this->resolved[$id], $this->reflection[$id]);
     }
 
     /**
@@ -119,7 +91,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
         $definition = $this->has($id) ? $this->getRaw($id) : $id;
 
         if ($definition instanceof \Closure) {
-            return $this->services[$id] = $definition = call_user_func_array(
+            return $this->resolved[$id] = $definition = call_user_func_array(
                 $definition,
                 $this->getInjections($definition, '__invoke', [], $id)
             );
@@ -133,7 +105,7 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
 
         // Check for instance of specified type
         if (is_object($definition) && ($instanceOf === null || $definition instanceof $instanceOf)) {
-            return $this->services[$id] = $definition;
+            return $this->resolved[$id] = $definition;
         }
 
         throw new FactoryException("Unresolvable dependency '{$id}' or type mismatch");
@@ -152,8 +124,8 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
     public function make($id, array $arguments = [], $recreate = false)
     {
         // Check cache of already resolved
-        if (!$recreate && array_key_exists($id, $this->services)) {
-            return $this->services[$id];
+        if (!$recreate && array_key_exists($id, $this->resolved)) {
+            return $this->resolved[$id];
         }
 
         return $this->instantiate($id, $arguments);
@@ -262,9 +234,26 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
         unset(
             $this->definitions[$offset],
             $this->resolved[$offset],
-            $this->reflection[$offset],
-            $this->services[$offset]
+            $this->reflection[$offset]
         );
+    }
+
+    /**
+     * Toggle autowiring
+     * @param bool $autowiring
+     */
+    public function useAutowiring($autowiring = true)
+    {
+        $this->useAutowiring = $autowiring;
+    }
+
+    /**
+     * Toggle closures resolving
+     * @param bool $resolveClosures
+     */
+    public function resolveClosures($resolveClosures = true)
+    {
+        $this->resolveClosures = $resolveClosures;
     }
 
     /**
@@ -394,6 +383,68 @@ class Container implements ContainerInterface, FactoryInterface, InvokerInterfac
         }
 
         return null;
+    }
+
+    /**
+     * Resolve definition
+     * @param $id
+     * @return mixed|string
+     * @throws FactoryException
+     * @throws InvokerException
+     * @throws NotFoundException
+     */
+    protected function resolve($id)
+    {
+        if ($this->useAutowiring) {
+            return $this->resolveAutowire($id);
+        }
+
+        $definition = $this->getRaw($id);
+
+        if ($this->resolveClosures && $definition instanceof \Closure) {
+            $definition = call_user_func_array(
+                $definition,
+                $this->getInjections($definition, '__invoke', [], $id)
+            );
+        }
+
+        $this->resolved[$id] = $definition;
+
+        return $this->resolved[$id];
+    }
+
+    /**
+     * Resolve definition with auto-wiring
+     * @param $id
+     * @return mixed|string
+     * @throws FactoryException
+     * @throws InvokerException
+     * @throws NotFoundException
+     */
+    protected function resolveAutowire($id)
+    {
+        $definition = $id;
+
+        if ($this->has($definition)) {
+            $definition = $this->getRaw($definition);
+        }
+
+        if (is_string($definition) && class_exists($definition)) {
+            return $this->make($definition);
+        }
+
+        if ($definition instanceof \Closure) {
+            $definition = call_user_func_array(
+                $definition,
+                $this->getInjections($definition, '__invoke', [], $id)
+            );
+        } elseif (!$this->has($id)) {
+            throw new NotFoundException("There is no definition for '{$id}'");
+        }
+
+        $this->resolved[$id] = $definition;
+
+        return $this->resolved[$id];
     }
 
 }
